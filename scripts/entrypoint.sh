@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 cat <<EOF
 ################################################################################
@@ -93,29 +93,31 @@ EOF
   ##
   # USER ACCOUNTS
   ##
-  for I_ACCOUNT in "$(env | grep '^ACCOUNT_')"
-  do
-    ACCOUNT_NAME=$(echo "$I_ACCOUNT" | cut -d'=' -f1 | sed 's/ACCOUNT_//g' | tr '[:upper:]' '[:lower:]')
-    ACCOUNT_PASSWORD=$(echo "$I_ACCOUNT" | sed 's/^[^=]*=//g')
+  for var in $(compgen -e); do
+    if [[ $var = ACCOUNT_* ]]; then
+      ACCOUNT_NAME=$(echo "$var" | sed 's/ACCOUNT_//g' | tr '[:upper:]' '[:lower:]')
+      ACCOUNT_PASSWORD=${!var}
 
-    echo ">> ACCOUNT: adding account: $ACCOUNT_NAME"
-    useradd -M -s /bin/false "$ACCOUNT_NAME"
-    echo "$ACCOUNT_PASSWORD\n$ACCOUNT_PASSWORD" | passwd "$ACCOUNT_NAME"
-    echo "$ACCOUNT_PASSWORD\n$ACCOUNT_PASSWORD" | smbpasswd -a "$ACCOUNT_NAME"
-    smbpasswd -e "$ACCOUNT_NAME"
+      echo ">> ACCOUNT: adding account: $ACCOUNT_NAME"
+      useradd -M -s /bin/false "$ACCOUNT_NAME"
+      echo -e "$ACCOUNT_PASSWORD\n$ACCOUNT_PASSWORD" | passwd "$ACCOUNT_NAME"
+      echo -e "$ACCOUNT_PASSWORD\n$ACCOUNT_PASSWORD" | smbpasswd -a "$ACCOUNT_NAME"
+      smbpasswd -e "$ACCOUNT_NAME"
 
-    unset $(echo "$I_ACCOUNT" | cut -d'=' -f1)
+      unset $var
+    fi
   done
 
   ##
-  # Samba Vonlume Config ENVs
+  # Samba Volume Config ENVs
   ##
-  for I_CONF in "$(env | grep '^SAMBA_VOLUME_CONFIG_')"
-  do
-    CONF_CONF_VALUE=$(echo "$I_CONF" | sed 's/^[^=]*=//g')
+  for var in $(compgen -e); do
+    if [[ $var = SAMBA_VOLUME_CONFIG_* ]]; then
+      CONF_CONF_VALUE=${!var}
 
-    echo "$CONF_CONF_VALUE" | sed 's/;/\n/g' >> /etc/smb.conf
-    echo "" >> /etc/smb.conf
+      echo "$CONF_CONF_VALUE" | sed 's/;/\n/g' >> /etc/smb.conf
+      echo "" >> /etc/smb.conf
+    fi
   done
 
   touch "$INITALIZED"
